@@ -1,195 +1,211 @@
-# SynthCore
+# SynthMood
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
 ![Python](https://img.shields.io/badge/python-3.10%2B-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
-**SynthCore** is the deterministic orchestration engine of the Nexus Client, responsible for prompt assembly, token budgeting, identity and mood injection, and coordinating memory-aware model behavior under strict context constraints.
+**SynthMood** is the affect and behavioral-bias subsystem of the Nexus Client, providing a bounded, decaying PAD (Valence, Arousal, Dominance) signal used to guide model strategy without simulating emotions.
 
 ---
 
 ## Overview
 
-SynthCore is **not** a chatbot loop and **not** a memory store.
+SynthMood is **not** an emotion engine and **not** a role-play system.
 
-It is the **control plane** that governs how a primary language model:
-- Receives context
-- Allocates tokens
-- Integrates memory
-- Maintains identity and behavioral continuity
-- Degrades gracefully when constraints are exceeded
+It exists to supply **lightweight, mathematically stable behavioral metadata** that helps the orchestration layer adjust *how* a model responds, not *what it pretends to feel*.
 
-SynthCore transforms an LLM from a reactive text generator into a **budget-aware, stateful, policy-driven system component**.
+SynthMood produces:
+- A continuous affect signal
+- With predictable decay over time
+- That converges to a neutral baseline
+- And injects clear, machine-usable strategy hints into the prompt pipeline
 
 ---
 
 ## Core Responsibilities
 
-SynthCore sits at the center of the Nexus architecture and coordinates multiple subsystems:
+SynthMood provides the Nexus Client with:
 
-- **Prompt Assembly**
-  - Constructs structured prompts with deterministic section ordering
-  - Enforces system > identity > mood > memory > user priority
-- **Token Budgeting**
-  - Allocates context budget per section
-  - Guarantees output reservation
-  - Prevents overflow by controlled degradation
-- **Memory Coordination**
-  - Requests relevant memory fragments from SynthMemory
-  - Enforces diversity and relevance constraints
-  - Treats memory as a bounded resource, not an append-only log
-- **Identity Injection**
-  - Injects stable identity and policy context
-  - Ensures behavioral continuity across turns
-- **Mood / Affect Injection**
-  - Applies decaying PAD (Valence, Arousal, Dominance) signals
-  - Provides strategy bias without emotional role-play
-- **Graceful Degradation**
-  - Drops or compresses lower-priority context under pressure
-  - Never sacrifices system or identity guarantees
+- **Affect Modeling**
+  - Uses the PAD model (Valence, Arousal, Dominance)
+  - Each dimension bounded in `[-1.0, 1.0]`
+- **Time-Based Decay**
+  - Exponential half-life decay toward baseline
+  - Prevents emotional accumulation or drift
+- **Behavioral Bias Injection**
+  - Translates PAD state into concise strategy guidance
+  - Influences tone, assertiveness, and caution
+- **Safety Guarantees**
+  - No emotional role-play
+  - No fabricated feelings
+  - No anthropomorphic claims
+
+SynthMood is deliberately conservative by design.
 
 ---
 
-## What SynthCore Is *Not*
+## What SynthMood Is *Not*
 
-SynthCore deliberately avoids responsibilities handled elsewhere:
+SynthMood explicitly avoids:
 
-- ❌ No vector storage (handled by SynthMemory)
-- ❌ No embedding generation
-- ❌ No tool execution or plugins (Phase 2+)
-- ❌ No emotional simulation or persona acting
-- ❌ No direct database persistence
+- ❌ Emotional simulation
+- ❌ Personality generation
+- ❌ Sentiment analysis
+- ❌ User mood inference
+- ❌ Memory storage
+- ❌ Long-term affect persistence
 
-This strict separation keeps the orchestration layer predictable and testable.
+It is a **control signal**, not a character system.
+
+---
+
+## PAD Model Explained
+
+SynthMood uses the classic **PAD model**:
+
+- **Valence**  
+  Negative ↔ Positive bias  
+  (e.g., conservative vs optimistic approaches)
+
+- **Arousal**  
+  Calm ↔ Energetic bias  
+  (e.g., thorough vs concise responses)
+
+- **Dominance**  
+  Deferential ↔ Directive bias  
+  (e.g., ask questions vs assert recommendations)
+
+All values are:
+- Continuous
+- Bounded
+- Decayed over time
+- Anchored to a defined baseline
+
+---
+
+## Decay Mechanics
+
+Mood decay is calculated using exponential half-life decay with inertia:
+
+```
+
+new_state = baseline + (last_state - baseline) * inertia * decay_factor
+
+````
+
+Where:
+- `decay_factor = exp(-ln(2) * t / half_life)`
+- `inertia` controls persistence
+- `half_life` controls decay speed
+
+This guarantees:
+- Stability
+- Predictable convergence
+- No runaway states
+- No permanent mood locking
+
+---
+
+## Baseline State
+
+By default, SynthMood converges to:
+
+- Valence: `0.0` (neutral)
+- Arousal: `0.0` (neutral)
+- Dominance: `0.5` (slightly in-control)
+
+This reflects a calm, professional, mildly assertive assistant as the neutral operating state.
+
+---
+
+## Prompt Injection
+
+SynthMood injects **internal-only context**, clearly labeled:
+
+```text
+## Dimensional Mood State (internal context, not for role-play):
+- Valence: +0.10
+- Arousal: -0.25
+- Dominance: +0.60
+Behavioral implication: be patient and thorough; take lead on architecture.
+````
+
+The injection always includes a guard clause:
+
+> This mood signal is metadata about task approach, NOT an instruction to simulate emotions.
+
+This prevents emotional hallucination while still enabling strategic bias.
+
+---
+
+## Integration Role
+
+Within the Nexus Client, SynthMood is:
+
+* Queried by **SynthCore**
+* Applied before memory injection
+* Treated as *advisory*, not authoritative
+* Overridden by explicit user instructions when conflicts arise
+
+SynthMood never overrides user intent.
 
 ---
 
 ## Architecture Position
 
 ```
+Time / Events
+   │
+   ▼
+SynthMood (Decay Engine)
+   │
+   ▼
+Behavioral Bias Metadata
+   │
+   ▼
+SynthCore Prompt Assembly
+```
 
-User Input
-│
-▼
-SynthCore Orchestrator
-├── TokenBudget
-├── PromptAssembler
-├── Identity Provider
-├── Mood Engine
-└── SynthMemory (retrieval only)
-│
-▼
-Final Structured Prompt
-│
-▼
-Primary LLM
-
-````
-
-SynthCore always remains **in control of context shape and size**, regardless of upstream or downstream complexity.
-
----
-
-## Key Components
-
-### `SynthCoreOrchestrator`
-The central coordinator responsible for:
-- Requesting memory
-- Applying identity and mood state
-- Enforcing token policy
-- Producing the final prompt
-
-### `TokenBudget`
-- Tracks total context limits
-- Reserves output tokens
-- Allocates per-section budgets
-- Enforces hard limits deterministically
-
-### `PromptAssembler`
-- Counts tokens using the target model’s tokenizer
-- Appends sections in priority order
-- Omits or truncates sections when budgets are exhausted
-
-### Identity Module
-- Provides stable system identity and policy constraints
-- Injected early and never degraded
-
-### Mood / Affect Module
-- Uses a PAD (Valence, Arousal, Dominance) model
-- Applies exponential decay toward baseline
-- Injects **behavioral bias**, not emotions
-
----
-
-## Design Principles
-
-SynthCore is built around a few non-negotiable principles:
-
-- **Determinism over cleverness**
-- **Explicit budgets beat implicit truncation**
-- **Memory is a resource, not a dump**
-- **Behavioral continuity without emotional theater**
-- **Fail safe, not fail loud**
-
-Every design choice favors predictability and debuggability.
+SynthMood has **no direct contact with the LLM**.
 
 ---
 
 ## Phase Status
 
 ### Phase 1 (Current)
-- Deterministic prompt assembly
-- Static identity injection
-- Decaying mood state
-- Episodic memory retrieval (via SynthMemory)
-- Token budgeting with graceful degradation
-- No tools, no plugins, no agent autonomy
+
+* PAD state representation
+* Exponential decay with inertia
+* Configurable dynamics
+* Safe prompt injection
+* No learning or persistence
 
 ### Phase 2 (Planned)
-- Tool orchestration
-- Plugin lifecycle management
-- Multi-model routing
-- Dynamic policy switching
-- Advanced telemetry and introspection
+
+* Event-driven mood adjustments
+* Mode-specific decay profiles
+* Optional persistence hooks
+* Telemetry and tuning tools
 
 ---
 
 ## Requirements
 
-- Python **3.10+**
-- Tokenizer compatible with target LLM (e.g. `tiktoken`)
-- Designed to integrate with Nexus Client subsystems
+* Python **3.10+**
+* Standard library only
+* Designed for orchestration-layer integration
 
 ---
 
-## Installation
+## Design Philosophy
 
-SynthCore is intended to be used as part of the Nexus Client and is not currently distributed as a standalone package.
+SynthMood follows three rules:
 
-Clone and integrate directly:
+1. **Bias behavior, don’t invent feelings**
+2. **Decay everything**
+3. **Never surprise the operator**
 
-```bash
-git clone https://github.com/otectus/synth_core.git
-````
-
----
-
-## Usage (Conceptual)
-
-```python
-orchestrator = SynthCoreOrchestrator(
-    memory_service=memory,
-    identity_provider=identity,
-    mood_engine=mood,
-    token_budget=budget
-)
-
-prompt = await orchestrator.build_prompt(
-    user_input="Explain the architecture.",
-    session_id=session_id,
-    user_id=user_id
-)
-```
+It exists to make responses *more appropriate*, not *more emotional*.
 
 ---
 
@@ -197,13 +213,3 @@ prompt = await orchestrator.build_prompt(
 
 MIT License.
 See `LICENSE` for details.
-
----
-
-## Philosophy
-
-SynthCore exists to answer one question:
-
-**“How do we keep a powerful model coherent, bounded, and intentional when everything around it wants to grow unbounded?”**
-
-This repository is one answer to that problem.
